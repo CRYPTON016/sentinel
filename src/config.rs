@@ -79,10 +79,9 @@ impl Config {
 
         for pattern in &self.exclude {
             if let Ok(glob) = globset::Glob::new(pattern) {
-                if let Ok(matcher) = glob.compile_matcher() {
-                    if matcher.is_match(path) {
-                        return true;
-                    }
+                let matcher = glob.compile_matcher();
+                if matcher.is_match(path) {
+                    return true;
                 }
             }
             // Simple string matching fallback

@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use inotify::{Inotify, WatchMask, WatchDescriptor, EventMask};
 use tokio::io::unix::AsyncFd;
+use nix::libc;
 
 /// inotify-based file system watcher
 pub struct InotifyWatcher {

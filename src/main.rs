@@ -17,16 +17,8 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use tracing::{info, error};
 
-mod config;
-mod daemon;
-mod detector;
-mod response;
-mod watcher;
-
-#[cfg(feature = "ebpf")]
-mod ebpf;
-
-use config::Config;
+// Use the library crate
+use sentinel::{Config, daemon, detector};
 
 #[derive(Parser)]
 #[command(name = "sentinel")]

@@ -6,11 +6,12 @@
 
 use super::{FileEvent, EventType};
 use std::path::{Path, PathBuf};
-use std::os::unix::io::{AsRawFd, RawFd};
+use std::os::unix::io::{AsRawFd, RawFd, AsFd};
+use std::os::fd::AsRawFd as _;
 use nix::sys::fanotify::{
     Fanotify, InitFlags, EventFFlags, MarkFlags, MaskFlags,
-    FanotifyEvent, Response,
 };
+use nix::libc;
 
 /// fanotify-based file system watcher
 pub struct FanotifyWatcher {
@@ -81,21 +82,30 @@ impl FanotifyWatcher {
         let events = self.fanotify.read_events()?;
 
         for event in events {
+            // Get the file descriptor from the event
+            let fd = match event.fd() {
+                Some(f) => f,
+                None => continue,
+            };
+
             // Get the file path from /proc/self/fd
-            let fd = event.fd().ok_or_else(|| anyhow::anyhow!("No fd in event"))?;
             let fd_path = format!("/proc/self/fd/{}", fd.as_raw_fd());
-            let path = std::fs::read_link(&fd_path)?;
+            let path = match std::fs::read_link(&fd_path) {
+                Ok(p) => p,
+                Err(_) => continue,
+            };
 
             // Get process info
             let pid = event.pid();
             let process_name = get_process_name(pid);
 
-            // Determine event type
-            let event_type = if event.check_mask(MaskFlags::FAN_OPEN_PERM) {
+            // Determine event type based on mask
+            let mask = event.mask();
+            let event_type = if mask.contains(MaskFlags::FAN_OPEN_PERM) {
                 EventType::AccessRequest
-            } else if event.check_mask(MaskFlags::FAN_CLOSE_WRITE) {
+            } else if mask.contains(MaskFlags::FAN_CLOSE_WRITE) {
                 EventType::CloseWrite
-            } else if event.check_mask(MaskFlags::FAN_MODIFY) {
+            } else if mask.contains(MaskFlags::FAN_MODIFY) {
                 EventType::Modify
             } else {
                 continue; // Unknown event
@@ -116,7 +126,21 @@ impl FanotifyWatcher {
     /// Allow a pending operation
     pub fn allow(&self, event: &FileEvent) -> anyhow::Result<()> {
         if let Some(fd) = event.fd {
-            self.fanotify.write_response(fd, Response::Allow)?;
+            // Write FAN_ALLOW response
+            let response = libc::fanotify_response {
+                fd: fd,
+                response: libc::FAN_ALLOW,
+            };
+            unsafe {
+                let res = libc::write(
+                    self.fanotify.as_fd().as_raw_fd(),
+                    &response as *const _ as *const libc::c_void,
+                    std::mem::size_of::<libc::fanotify_response>(),
+                );
+                if res < 0 {
+                    return Err(anyhow::anyhow!("Failed to write fanotify response"));
+                }
+            }
         }
         Ok(())
     }
@@ -124,14 +148,28 @@ impl FanotifyWatcher {
     /// Deny a pending operation
     pub fn deny(&self, event: &FileEvent) -> anyhow::Result<()> {
         if let Some(fd) = event.fd {
-            self.fanotify.write_response(fd, Response::Deny)?;
+            // Write FAN_DENY response
+            let response = libc::fanotify_response {
+                fd: fd,
+                response: libc::FAN_DENY,
+            };
+            unsafe {
+                let res = libc::write(
+                    self.fanotify.as_fd().as_raw_fd(),
+                    &response as *const _ as *const libc::c_void,
+                    std::mem::size_of::<libc::fanotify_response>(),
+                );
+                if res < 0 {
+                    return Err(anyhow::anyhow!("Failed to write fanotify response"));
+                }
+            }
         }
         Ok(())
     }
 
     /// Get the raw file descriptor
     pub fn as_raw_fd(&self) -> RawFd {
-        self.fanotify.as_raw_fd()
+        self.fanotify.as_fd().as_raw_fd()
     }
 }
 

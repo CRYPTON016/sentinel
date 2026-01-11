@@ -1,6 +1,7 @@
 //! Daemon management for Sentinel
 
 use crate::config::Config;
+use crate::Sentinel;
 use std::path::PathBuf;
 use tokio::net::{UnixListener, UnixStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -71,7 +72,7 @@ pub async fn start(config: Config, foreground: bool) -> anyhow::Result<()> {
     info!("Sentinel daemon started, listening on {:?}", config.daemon.socket);
 
     // Create the main sentinel instance
-    let mut sentinel = crate::Sentinel::new(config.clone())?;
+    let mut sentinel = Sentinel::new(config.clone())?;
 
     // Add configured watch paths
     for path in &config.watch {
@@ -237,7 +238,7 @@ pub async fn show_logs(lines: usize, follow: bool) -> anyhow::Result<()> {
 
 // Helper functions
 
-async fn handle_client(mut stream: UnixStream, sentinel: &mut crate::Sentinel) -> anyhow::Result<()> {
+async fn handle_client(mut stream: UnixStream, sentinel: &mut Sentinel) -> anyhow::Result<()> {
     // Read command length
     let mut len_bytes = [0u8; 4];
     stream.read_exact(&mut len_bytes).await?;
