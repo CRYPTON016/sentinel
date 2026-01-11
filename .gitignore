@@ -1,0 +1,56 @@
+# Build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo
+Cargo.lock
+.cargo/
+
+# eBPF build artifacts
+*.bpf.o
+*.skel.rs
+vmlinux.h
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+*.profraw
+*.profdata
+coverage/
+lcov.info
+tarpaulin-report.html
+
+# Local configuration
+/configs/local.yaml
+/configs/*.local.yaml
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Runtime files
+*.pid
+*.sock
+/run/
+
+# AIDE database (generated)
+/aide.db
+/aide.db.new
+
+# Canary files (generated)
+.sentinel_canary_*
+
+# Debug builds
+debug/
+
+# Documentation build
+/docs/book/

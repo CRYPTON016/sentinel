@@ -1,0 +1,112 @@
+# Sentinel Configuration
+# Optimized for AI/ML servers with minimal performance impact
+
+# Directories to watch - EXCLUDE heavy ML paths
+watch:
+  - /home
+  - /etc
+  - /var/www
+  - /app
+
+# Extensive exclusions for ML workloads
+exclude:
+  # Standard exclusions
+  - "*.log"
+  - "*.tmp"
+  - "/tmp/**"
+  - "/var/log/**"
+  - "/proc/**"
+  - "/sys/**"
+  - "/dev/**"
+
+  # ML model files (already high-entropy, skip entropy checks)
+  - "*.safetensors"
+  - "*.gguf"
+  - "*.ggml"
+  - "*.bin"
+  - "*.pt"
+  - "*.pth"
+  - "*.onnx"
+  - "*.pb"
+  - "*.h5"
+  - "*.hdf5"
+  - "*.pkl"
+  - "*.pickle"
+  - "*.npy"
+  - "*.npz"
+
+  # Training data
+  - "*.parquet"
+  - "*.arrow"
+  - "*.tfrecord"
+  - "*.csv.gz"
+
+  # Common ML directories
+  - "/models/**"
+  - "/datasets/**"
+  - "/checkpoints/**"
+  - "/data/**"
+  - "/cache/**"
+
+  # Hugging Face cache
+  - "/root/.cache/huggingface/**"
+  - "/home/*/.cache/huggingface/**"
+
+  # PyTorch cache
+  - "/root/.cache/torch/**"
+  - "/home/*/.cache/torch/**"
+
+  # Conda/pip
+  - "/opt/conda/**"
+  - "/home/*/anaconda3/**"
+  - "/home/*/miniconda3/**"
+
+# Whitelist ML processes
+whitelist:
+  processes:
+    - python
+    - python3
+    - python3.*
+    - ollama
+    - vllm
+    - tritonserver
+    - torchserve
+    - mcp-server
+    - jupyter
+    - jupyter-lab
+    - uvicorn
+    - gunicorn
+    - ray
+
+  paths:
+    - /opt/conda/bin/*
+    - /usr/local/cuda/*
+
+# Alerts
+alerts:
+  desktop: true
+  # webhook: "https://your-ml-monitoring.com/alert"
+
+# AIDE - minimal scanning for ML servers
+aide:
+  enabled: true
+  paths:
+    - /etc
+    - /usr/bin
+    - /app  # Your application code
+  schedule: "0 4 * * 0"  # Sunday 4 AM only (weekly)
+  database: /var/lib/sentinel/aide.db
+
+# Detection - slightly relaxed for ML workloads
+detection:
+  entropy_high: 7.9    # Higher threshold (ML files are often ~7.5-7.9)
+  entropy_low: 6.0
+  velocity_limit: 20   # Higher limit (ML saves more files)
+  canary_enabled: true
+  canary_prefix: ".sentinel_canary_"
+
+# Daemon
+daemon:
+  pid_file: /run/sentinel.pid
+  socket: /run/sentinel.sock
+  log_file: /var/log/sentinel.log

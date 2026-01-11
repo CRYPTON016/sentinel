@@ -1,0 +1,82 @@
+# Sentinel Configuration
+# Default configuration for general use
+
+# Directories to watch for file changes
+watch:
+  - /home
+  - /var/www
+  - /etc
+
+# Paths and patterns to exclude from monitoring
+exclude:
+  - "*.log"
+  - "*.tmp"
+  - "/tmp/**"
+  - "/var/log/**"
+  - "/proc/**"
+  - "/sys/**"
+  - "/dev/**"
+
+# Process whitelist - these processes won't trigger alerts
+whitelist:
+  processes:
+    - firefox
+    - chromium
+    - code
+    - vim
+    - nano
+    - git
+
+  paths:
+    - /usr/bin/apt
+    - /usr/bin/dpkg
+
+# Alert configuration
+alerts:
+  # Desktop notifications
+  desktop: true
+
+  # Webhook URL for alerts (optional)
+  # webhook: "https://your-webhook-url.com/alert"
+
+  # Slack webhook (optional)
+  # slack: "https://hooks.slack.com/services/XXX/YYY/ZZZ"
+
+  # Email for alerts (optional)
+  # email: "admin@example.com"
+
+# AIDE-like integrity checking
+aide:
+  enabled: true
+  paths:
+    - /etc
+    - /usr/bin
+    - /usr/sbin
+  schedule: "0 3 * * *"  # 3 AM daily
+  database: /var/lib/sentinel/aide.db
+
+# Detection thresholds
+detection:
+  # Entropy threshold for encrypted detection (0.0 - 8.0)
+  # Files above this are considered high-entropy (encrypted/compressed)
+  entropy_high: 7.8
+
+  # Entropy threshold for normal files
+  # Files below this are considered normal (text, documents)
+  entropy_low: 6.0
+
+  # Maximum high-entropy writes per process per minute
+  # Exceeding this triggers velocity-based detection
+  velocity_limit: 10
+
+  # Enable canary (honeypot) files
+  canary_enabled: true
+  canary_prefix: ".sentinel_canary_"
+
+# Daemon configuration
+daemon:
+  pid_file: /run/sentinel.pid
+  socket: /run/sentinel.sock
+  log_file: /var/log/sentinel.log
+  # user: sentinel
+  # group: sentinel
