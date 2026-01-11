@@ -1,0 +1,49 @@
+[Unit]
+Description=Sentinel - Real-time Ransomware Detection and Prevention
+Documentation=https://github.com/CRYPTON016/sentinel
+After=network.target local-fs.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/sentinel start --foreground
+ExecStop=/usr/local/bin/sentinel stop
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart on failure
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Security hardening
+NoNewPrivileges=false
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+# Required capabilities for fanotify and eBPF
+AmbientCapabilities=CAP_SYS_ADMIN CAP_DAC_READ_SEARCH CAP_KILL
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_DAC_READ_SEARCH CAP_KILL CAP_NET_ADMIN CAP_BPF CAP_PERFMON
+
+# Allow read access to monitored directories
+ReadWritePaths=/var/lib/sentinel /var/log /run
+ReadOnlyPaths=/etc /home /var/www
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sentinel
+
+# Resource limits
+MemoryMax=512M
+TasksMax=100
+
+[Install]
+WantedBy=multi-user.target
